@@ -60,6 +60,18 @@ coverage.xml
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+pfe/api/migrations/
+pfe/api/__init__.py
+pfe/api/apps.py
+pfe/api/tests.py
+pfe/pfe/__init__.py
+pfe/pfe/asgi.py
+pfe/pfe/settings.py
+pfe/pfe/wsgi.py
+pfe/manage.py
+
+#Pychrm staff:
+pfe/.idea
 
 # Flask stuff:
 instance/

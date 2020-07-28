@@ -60,15 +60,15 @@ coverage.xml
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
-pfe/api/migrations/
-pfe/api/__init__.py
-pfe/api/apps.py
-pfe/api/tests.py
-pfe/pfe/__init__.py
-pfe/pfe/asgi.py
-pfe/pfe/settings.py
-pfe/pfe/wsgi.py
-pfe/manage.py
+graphql_api/migrations/
+graphql_api/__init__.py
+graphql_api/apps.py
+graphql_api/tests.py
+pfe/__init__.py
+pfe/asgi.py
+pfe/settings.py
+pfe/wsgi.py
+manage.py
 
 #Pychrm staff:
 pfe/.idea

@@ -72,6 +72,8 @@ manage.py
 
 #Pychrm staff:
 pfe/.idea
+.idea/
+migrate.bat
 
 # Flask stuff:
 instance/

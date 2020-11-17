@@ -141,8 +141,8 @@ class Query(user_query, graphene.ObjectType):
     def resolve_lva(self, info):
         data = dict()
         p = Protocole.objects.get(type="liberte des voies aeriennes", cas_precis="subluxation de la mandibule")
-        if (p.img.path):
-            data["img"] = p.img.path
+        if (p.img):
+            data["img"] = p.img.url
         data["instructions"] = p.data
         return data
 

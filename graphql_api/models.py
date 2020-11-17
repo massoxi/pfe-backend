@@ -123,7 +123,7 @@ gd_storage = GoogleDriveStorage()
 class Protocole(models.Model):
     type = models.TextField(blank=True, null=True, verbose_name="Protocole")
     cas_precis = models.TextField(blank=True, null=True, verbose_name="situation")
-    img = models.ImageField(upload_to='protocole/', null=True, blank=True)
+    img = models.FileField(upload_to='protocole/', null=True, blank=True, storage=gd_storage)
     data = models.JSONField()
 
     class Meta:

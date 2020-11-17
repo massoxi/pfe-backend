@@ -1,70 +1,134 @@
-from django.contrib.auth.base_user import BaseUserManager
-
+from gdstorage.storage import GoogleDriveStorage
 from django.db import models
+from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.mail import send_mail
-from django.contrib.auth.models import PermissionsMixin
-from django.contrib.auth.base_user import AbstractBaseUser
-from django.utils.translation import ugettext_lazy as _
+import string
+import random
 
-class UserManager(BaseUserManager):
-    use_in_migrations = True
+def randompassword():
+  chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
+  size = random.randint(8, 12)
+  return ''.join(random.choice(chars) for x in range(size))
 
-    def _create_user(self, email, password, **extra_fields):
-        """
-        Creates and saves a User with the given email and password.
-        """
-        if not email:
-            raise ValueError('The given email must be set')
-        email = self.normalize_email(email)
-        user = self.model(email=email, **extra_fields)
-        user.set_password(password)
-        user.save(using=self._db)
-        return user
+SEXE = (
+    ("1", ("M")),
+    ("2", ("F")),
+)
 
-    def create_user(self, email, password=None, **extra_fields):
-        extra_fields.setdefault('is_superuser', False)
-        return self._create_user(email, password, **extra_fields)
-
-    def create_superuser(self, email, password, **extra_fields):
-        extra_fields.setdefault('is_superuser', True)
-
-        if extra_fields.get('is_superuser') is not True:
-            raise ValueError('Superuser must have is_superuser=True.')
-
-        return self._create_user(email, password, **extra_fields)
-
-class User(AbstractBaseUser, PermissionsMixin):
-    email = models.EmailField(_('email address'), unique=True)
-    first_name = models.CharField(_('first name'), max_length=30, blank=True)
-    last_name = models.CharField(_('last name'), max_length=30, blank=True)
-    date_joined = models.DateTimeField(_('date joined'), auto_now_add=True)
-    is_active = models.BooleanField(_('active'), default=True)
+class User(AbstractUser):
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
 
-    objects = UserManager()
+    class Meta:
+        db_table = 'User'
 
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = []
+    def __str__(self):
+        return "{} {}".format(self.first_name, self.last_name)
+
+class Temoin(User):
+    class Meta:
+        verbose_name = 'Témoin'
+        verbose_name_plural = 'Témoins'
+        db_table = 'Temoin'
+
+class Medicin(User):
+    class Meta:
+        verbose_name = 'Médicin'
+        verbose_name_plural = 'Médicins'
+        db_table = 'Medicin'
+
+    def save(self, **kwargs):
+        password = randompassword()
+        email = self.username
+        Medicin.set_password(self, raw_password = password)
+        send_mail('Registration in FirstAid App', 'Your identifier: {}\nYour password: {}'.format(email, password), 'estanislaumenezes9@gmail.com',
+                  [email])
+        super().save(**kwargs)
+
+
+class Victime(models.Model):
+    age = models.PositiveSmallIntegerField(null=True, blank=True)
+    sexe = models.CharField(max_length=1, null=True, blank=True, choices=SEXE)
+    adresse = models.TextField(null=True, blank=True)
 
     class Meta:
-        verbose_name = _('user')
-        verbose_name_plural = _('users')
+        db_table = 'Victime'
 
-    def get_full_name(self):
-        '''
-        Returns the first_name plus the last_name, with a space in between.
-        '''
-        full_name = '%s %s' % (self.first_name, self.last_name)
-        return full_name.strip()
+    def __str__(self):
+        return  "Victime du sexe {} et age {}".format(self.sexe, self.age)
 
-    def get_short_name(self):
-        '''
-        Returns the short name for the user.
-        '''
-        return self.first_name
+class Cas(models.Model):
+    date = models.DateTimeField(default=timezone.now())
+    lieu = models.TextField(blank=True)
+    adresse = models.TextField(blank=True)
+    temoin = models.ForeignKey(Temoin, blank=True, null=True, on_delete=models.CASCADE)
+    victime = models.ForeignKey(Victime, blank=True, null=True, on_delete=models.CASCADE)
 
-    def email_user(self, subject, message, from_email=None, **kwargs):
-        '''
-        Sends an email to this User.
-        '''
-        send_mail(subject, message, from_email, [self.email], **kwargs)
+    class Meta:
+        db_table = "Cas"
+        verbose_name_plural = "Cas"
+
+class Signes_N(models.Model):
+    ouverture_yeux = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(4)])
+    reponse_verbale = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    reponse_motrice = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(6)])
+
+    class Meta:
+        db_table = "Signes Neurologiques"
+        verbose_name = "Signes Neurologiques"
+        verbose_name_plural = "Signes Neurologiques"
+
+class Signes_F(models.Model):
+    hemorragie = models.BooleanField(blank=True, null=True)
+    dyspnee = models.BooleanField(blank=True, null=True)
+    pouls = models.BooleanField(blank=True, null=True)
+
+    class Meta:
+        db_table = "Signes Fonctionnelles"
+        verbose_name = "Signes Fonctionnelles"
+        verbose_name_plural = "Signes Fonctionnelles"
+
+class Cas_N(models.Model):
+    cas = models.ForeignKey(Cas, blank=True, null=True, on_delete=models.CASCADE)
+    neurologie = models.ForeignKey(Signes_N, blank=True, null=True, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = "Neurologie"
+        verbose_name = "Cas x Neurologie"
+        verbose_name_plural = "Cas x Neurologie"
+
+class Cas_F(models.Model):
+    cas = models.ForeignKey(Cas, blank=True, null=True, on_delete=models.CASCADE)
+    fonctionnelle = models.ForeignKey(Signes_F, blank=True, null=True, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = "Fonctionnelles"
+        verbose_name = "Cas x Signes Fonctionnelles"
+        verbose_name_plural = "Cas x Signes Fonctionnelles"
+
+class Message(models.Model):
+    expediteur = models.ForeignKey(User, blank=True, null=True, related_name="expediteur", on_delete=models.CASCADE)
+    destinateur = models.ForeignKey(User, blank=True, null=True, related_name="destinateur", on_delete=models.CASCADE)
+    diffusion = models.BooleanField(default=False)
+    contenu = models.TextField(blank=True, null=True)
+    date = models.DateTimeField(default=timezone.now())
+
+    class Meta:
+        db_table = "Messages"
+
+# Define Google Drive Storage
+gd_storage = GoogleDriveStorage()
+
+class Protocole(models.Model):
+    type = models.TextField(blank=True, null=True, verbose_name="Protocole")
+    cas_precis = models.TextField(blank=True, null=True, verbose_name="situation")
+    img = models.ImageField(upload_to='protocole/', null=True, blank=True)
+    data = models.JSONField()
+
+    class Meta:
+        db_table = "Protocole"
+        unique_together = ['type', 'cas_precis']
+
+    def __str__(self):
+        return "Type: {}    Cas: {} ".format(self.type, self.cas_precis)
